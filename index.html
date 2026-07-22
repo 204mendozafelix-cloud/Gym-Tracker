@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gym Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
+            --input-bg: #2c2c2e;
+            --accent-color: #30d158;
+            --text-color: #ffffff;
+            --text-secondary: #8e8e93;
+            --danger-color: #ff453a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--input-bg);
+            border: 1px solid #3a3a3c;
+            border-radius: 10px;
+            color: var(--text-color);
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .row .form-group {
+            flex: 1;
+        }
+
+        button.btn-primary {
+            width: 100%;
+            background-color: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .history-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .log-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #2c2c2e;
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-info strong {
+            display: block;
+            font-size: 16px;
+        }
+
+        .log-info span {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .log-data {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            font-size: 18px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Gym Tracker</h1>
+    </div>
+
+    <div class="card">
+        <div class="form-group">
+            <label for="exercise">Ejercicio</label>
+            <input type="text" id="exercise" placeholder="Ej. Sentadilla, Press Banca...">
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label for="weight">Peso (kg)</label>
+                <input type="number" id="weight" placeholder="100" inputmode="decimal">
+            </div>
+            <div class="form-group">
+                <label for="reps">Reps</label>
+                <input type="number" id="reps" placeholder="10" inputmode="numeric">
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="guardarSerie()">Registrar Serie</button>
+    </div>
+
+    <div class="history-title">Histórico de Entrenamientos</div>
+    <div class="card" id="history-container">
+        </div>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+    }
+
+    // Cargar historial al iniciar
+    document.addEventListener('DOMContentLoaded', cargarHistorial);
+
+    function guardarSerie() {
+        const exercise = document.getElementById('exercise').value.trim();
+        const weight = document.getElementById('weight').value;
+        const reps = document.getElementById('reps').value;
+
+        if (!exercise || !weight || !reps) {
+            alert('Por favor completa todos los campos');
+            return;
+        }
+
+        const nuevoRegistro = {
+            id: Date.now(),
+            exercise: exercise,
+            weight: weight,
+            reps: reps,
+            date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        };
+
+        // Obtener datos existentes de localStorage
+        let historial = JSON.parse(localStorage.getItem('gym_logs')) || [];
+        historial.unshift(nuevoRegistro); // Agregar al inicio
+
+        // Guardar de nuevo en la memoria local
+        localStorage.setItem('gym_logs', JSON.stringify(historial));
+
+        // Limpiar campos de texto
+        document.getElementById('weight').value = '';
+        document.getElementById('reps').value = '';
+
+        cargarHistorial();
+    }
+
+    function cargarHistorial() {
+        const container = document.getElementById('history-container');
+        let historial = JSON.parse(localStorage.getItem('gym_logs')) || [];
+
+        if (historial.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color: var(--text-secondary);">Sin registros aún</div>';
+            return;
+        }
+
+        container.innerHTML = historial.map(item => `
+            <div class="log-item">
+                <div class="log-info">
+                    <strong>${item.exercise}</strong>
+                    <span>${item.date}</span>
+                </div>
+                <div>
+                    <span class="log-data">${item.weight} kg × ${item.reps} reps</span>
+                    <button class="delete-btn" onclick="eliminarRegistro(${item.id})">✕</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function eliminarRegistro(id) {
+        let historial = JSON.parse(localStorage.getItem('gym_logs')) || [];
+        historial = historial.filter(item => item.id !== id);
+        localStorage.setItem('gym_logs', JSON.stringify(historial));
+        cargarHistorial();
+    }
+</script>
+</body>
+</html>
