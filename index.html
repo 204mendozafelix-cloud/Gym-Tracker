@@ -13,6 +13,7 @@
             --card-bg: #1c1c1e;
             --input-bg: #2c2c2e;
             --accent-color: #30d158;
+            --pb-color: #ffd60a;
             --text-color: #ffffff;
             --text-secondary: #8e8e93;
             --danger-color: #ff453a;
@@ -29,15 +30,62 @@
         }
 
         .header {
-            text-align: center;
-            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
 
         h1 {
-            font-size: 28px;
+            font-size: 22px;
             margin: 0;
             font-weight: 700;
             color: var(--accent-color);
+            text-align: center;
+            flex: 1;
+        }
+
+        .btn-back {
+            background: var(--card-bg);
+            border: none;
+            color: var(--accent-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .menu-item {
+            background-color: var(--card-bg);
+            padding: 16px 20px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .menu-item::after {
+            content: '›';
+            font-size: 22px;
+            color: var(--text-secondary);
         }
 
         .card {
@@ -45,6 +93,38 @@
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 20px;
+        }
+
+        .pb-card {
+            background: linear-gradient(135deg, #2c2c2e 0%, #1c1c1e 100%);
+            border: 1px solid var(--pb-color);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pb-title {
+            font-size: 13px;
+            color: var(--pb-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .pb-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .pb-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: right;
         }
 
         .form-group {
@@ -58,7 +138,7 @@
             margin-bottom: 6px;
         }
 
-        input, select {
+        input {
             width: 100%;
             padding: 12px;
             background-color: var(--input-bg);
@@ -89,11 +169,11 @@
             font-weight: 700;
             border-radius: 12px;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 5px;
         }
 
         .history-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             margin-bottom: 12px;
             color: var(--text-secondary);
@@ -109,11 +189,6 @@
 
         .log-item:last-child {
             border-bottom: none;
-        }
-
-        .log-info strong {
-            display: block;
-            font-size: 16px;
         }
 
         .log-info span {
@@ -140,86 +215,256 @@
 <body>
 
     <div class="header">
-        <h1>Gym Tracker</h1>
+        <button id="btn-back" class="btn-back" onclick="goBack()" style="visibility: hidden;">‹ Volver</button>
+        <h1 id="title">Músculos</h1>
+        <div style="width: 60px;"></div>
     </div>
 
-    <div class="card">
-        <div class="form-group">
-            <label for="exercise">Ejercicio</label>
-            <input type="text" id="exercise" placeholder="Ej. Sentadilla, Press Banca...">
-        </div>
-
-        <div class="row">
-            <div class="form-group">
-                <label for="weight">Peso (kg)</label>
-                <input type="number" id="weight" placeholder="100" inputmode="decimal">
-            </div>
-            <div class="form-group">
-                <label for="reps">Reps</label>
-                <input type="number" id="reps" placeholder="10" inputmode="numeric">
-            </div>
-        </div>
-
-        <button class="btn-primary" onclick="guardarSerie()">Registrar Serie</button>
+    <div id="screen-muscles" class="screen active">
+        <div class="menu-list" id="muscles-list"></div>
     </div>
 
-    <div class="history-title">Histórico de Entrenamientos</div>
-    <div class="card" id="history-container">
+    <div id="screen-exercises" class="screen">
+        <div class="menu-list" id="exercises-list"></div>
+    </div>
+
+    <div id="screen-detail" class="screen">
+        
+        <div class="pb-card">
+            <div>
+                <div class="pb-title">🏆 Personal Best (PB)</div>
+                <div class="pb-value" id="pb-display">---</div>
+            </div>
+            <div class="pb-date" id="pb-date-display">Sin registros</div>
         </div>
+
+        <div class="card">
+            <div class="row">
+                <div class="form-group">
+                    <label for="weight">Peso (kg)</label>
+                    <input type="number" id="weight" placeholder="100" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                    <label for="reps">Reps</label>
+                    <input type="number" id="reps" placeholder="10" inputmode="numeric">
+                </div>
+            </div>
+            <button class="btn-primary" onclick="guardarSerie()">Registrar Serie</button>
+        </div>
+
+        <div class="history-title">Histórico de este ejercicio</div>
+        <div class="card" id="history-container"></div>
+    </div>
 
 <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js');
     }
 
-    // Cargar historial al iniciar
-    document.addEventListener('DOMContentLoaded', cargarHistorial);
+    // BASE DE DATOS PERSONALIZADA DE MÚSCULOS Y EJERCICIOS
+    const dbGym = {
+        "Pecho": [
+            "Barra horizontal",
+            "Barra inclinada",
+            "Mancuerna horizontal",
+            "Mancuerna inclinada",
+            "Pecfly maquin",
+            "Pechly mancuerna",
+            "Polea subiendo",
+            "Polea bajando"
+        ],
+        "Hombro": [
+            "Laterales mancuerna",
+            "Laterales polea",
+            "Frontal mancuerna",
+            "Frontal polea",
+            "Press maquina",
+            "Press mancuerna",
+            "Press barra"
+        ],
+        "Tríceps": [
+            "Extensión cuerda",
+            "Extensión barra",
+            "Kick back polea",
+            "Copa polea",
+            "Copa mancuerna",
+            "Fondos"
+        ],
+        "Espalda": [
+            "Jalón abierto",
+            "Jalón cerrado",
+            "Pull ups",
+            "Remo maquina",
+            "Remo disco",
+            "Remo mancuerna",
+            "Remo barra",
+            "Remo polea cerrado",
+            "Pull over",
+            "Facepull"
+        ],
+        "Bíceps": [
+            "Martillo mancuerna",
+            "Predicador barra",
+            "Curl barra libre",
+            "Curl mancuerna",
+            "Curl barra polea",
+            "Martillo polea",
+            "Cocentrado",
+            "Curl bayesian"
+        ],
+        "Trapecio": [
+            "Remo al cuello",
+            "Encojimiento de hombro"
+        ],
+        "Pierna": [
+            "Prensa",
+            "Squad libre",
+            "Squad smith",
+            "Peso muerto mancuerna",
+            "Peso muerto barra",
+            "Peso muerto smith",
+            "Extensión cuádriceps",
+            "Femoral acostado",
+            "Femoral sentado",
+            "Abducción",
+            "Aducción",
+            "Sentadilla sumo",
+            "Sentadilla hack",
+            "Hip thrust"
+        ]
+    };
 
+    let selectedMuscle = null;
+    let selectedExercise = null;
+
+    document.addEventListener('DOMContentLoaded', initApp);
+
+    function initApp() {
+        renderMuscles();
+    }
+
+    // Renderizar Pantalla 1
+    function renderMuscles() {
+        const container = document.getElementById('muscles-list');
+        container.innerHTML = Object.keys(dbGym).map(muscle => `
+            <div class="menu-item" onclick="selectMuscle('${muscle}')">
+                ${muscle}
+            </div>
+        `).join('');
+    }
+
+    // Seleccionar Músculo ➔ Ir a Pantalla 2
+    function selectMuscle(muscle) {
+        selectedMuscle = muscle;
+        document.getElementById('title').innerText = muscle;
+        document.getElementById('btn-back').style.visibility = 'visible';
+
+        const container = document.getElementById('exercises-list');
+        const exercises = dbGym[muscle] || [];
+
+        container.innerHTML = exercises.map(ex => `
+            <div class="menu-item" onclick="selectExercise('${ex}')">
+                ${ex}
+            </div>
+        `).join('');
+
+        showScreen('screen-exercises');
+    }
+
+    // Seleccionar Ejercicio ➔ Ir a Pantalla 3
+    function selectExercise(exercise) {
+        selectedExercise = exercise;
+        document.getElementById('title').innerText = exercise;
+
+        cargarDatosEjercicio();
+        showScreen('screen-detail');
+    }
+
+    // Navegación hacia atrás
+    function goBack() {
+        const activeScreen = document.querySelector('.screen.active').id;
+
+        if (activeScreen === 'screen-detail') {
+            document.getElementById('title').innerText = selectedMuscle;
+            showScreen('screen-exercises');
+        } else if (activeScreen === 'screen-exercises') {
+            document.getElementById('title').innerText = 'Músculos';
+            document.getElementById('btn-back').style.visibility = 'hidden';
+            selectedMuscle = null;
+            showScreen('screen-muscles');
+        }
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    // Guardar Serie vinculada al Ejercicio Actual
     function guardarSerie() {
-        const exercise = document.getElementById('exercise').value.trim();
-        const weight = document.getElementById('weight').value;
-        const reps = document.getElementById('reps').value;
+        const weightInput = document.getElementById('weight');
+        const repsInput = document.getElementById('reps');
 
-        if (!exercise || !weight || !reps) {
-            alert('Por favor completa todos los campos');
+        const weight = parseFloat(weightInput.value);
+        const reps = parseInt(repsInput.value);
+
+        if (isNaN(weight) || isNaN(reps)) {
+            alert('Por favor introduce un peso y repeticiones válidos');
             return;
         }
 
         const nuevoRegistro = {
             id: Date.now(),
-            exercise: exercise,
+            exercise: selectedExercise,
             weight: weight,
             reps: reps,
-            date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+            date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })
         };
 
-        // Obtener datos existentes de localStorage
         let historial = JSON.parse(localStorage.getItem('gym_logs')) || [];
-        historial.unshift(nuevoRegistro); // Agregar al inicio
-
-        // Guardar de nuevo en la memoria local
+        historial.unshift(nuevoRegistro);
         localStorage.setItem('gym_logs', JSON.stringify(historial));
 
-        // Limpiar campos de texto
-        document.getElementById('weight').value = '';
-        document.getElementById('reps').value = '';
+        weightInput.value = '';
+        repsInput.value = '';
 
-        cargarHistorial();
+        cargarDatosEjercicio();
     }
 
-    function cargarHistorial() {
+    // Cargar Historial y Calcular PB para el Ejercicio Actual
+    function cargarDatosEjercicio() {
         const container = document.getElementById('history-container');
-        let historial = JSON.parse(localStorage.getItem('gym_logs')) || [];
+        const pbDisplay = document.getElementById('pb-display');
+        const pbDateDisplay = document.getElementById('pb-date-display');
 
-        if (historial.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color: var(--text-secondary);">Sin registros aún</div>';
+        let historial = JSON.parse(localStorage.getItem('gym_logs')) || [];
+        const logsEjercicio = historial.filter(item => item.exercise === selectedExercise);
+
+        // --- CÁLCULO DEL PB (PERSONAL BEST) ---
+        if (logsEjercicio.length > 0) {
+            // Encuentra el registro con el peso máximo (y más reps en caso de empate)
+            const pb = logsEjercicio.reduce((max, item) => {
+                if (item.weight > max.weight) return item;
+                if (item.weight === max.weight && item.reps > max.reps) return item;
+                return max;
+            }, logsEjercicio[0]);
+
+            pbDisplay.innerText = `${pb.weight} kg × ${pb.reps} reps`;
+            pbDateDisplay.innerText = `Fecha: ${pb.date}`;
+        } else {
+            pbDisplay.innerText = '---';
+            pbDateDisplay.innerText = 'Sin Récord Registrado';
+        }
+
+        // --- RENDER DEL HISTORIAL ---
+        if (logsEjercicio.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color: var(--text-secondary);">Sin registros para este ejercicio</div>';
             return;
         }
 
-        container.innerHTML = historial.map(item => `
+        container.innerHTML = logsEjercicio.map(item => `
             <div class="log-item">
                 <div class="log-info">
-                    <strong>${item.exercise}</strong>
                     <span>${item.date}</span>
                 </div>
                 <div>
@@ -234,7 +479,7 @@
         let historial = JSON.parse(localStorage.getItem('gym_logs')) || [];
         historial = historial.filter(item => item.id !== id);
         localStorage.setItem('gym_logs', JSON.stringify(historial));
-        cargarHistorial();
+        cargarDatosEjercicio();
     }
 </script>
 </body>
