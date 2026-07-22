@@ -138,7 +138,7 @@
             margin-bottom: 6px;
         }
 
-        input {
+        input, select {
             width: 100%;
             padding: 12px;
             background-color: var(--input-bg);
@@ -152,11 +152,19 @@
 
         .row {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
-        .row .form-group {
+        .row .form-group.weight-input-group {
+            flex: 2;
+        }
+
+        .row .form-group.unit-select-group {
             flex: 1;
+        }
+
+        .row .form-group.reps-input-group {
+            flex: 1.5;
         }
 
         button.btn-primary {
@@ -240,11 +248,18 @@
 
         <div class="card">
             <div class="row">
-                <div class="form-group">
-                    <label for="weight">Peso (kg)</label>
+                <div class="form-group weight-input-group">
+                    <label for="weight">Peso</label>
                     <input type="number" id="weight" placeholder="100" inputmode="decimal">
                 </div>
-                <div class="form-group">
+                <div class="form-group unit-select-group">
+                    <label for="unit">Unidad</label>
+                    <select id="unit">
+                        <option value="kg">kg</option>
+                        <option value="lb">lb</option>
+                    </select>
+                </div>
+                <div class="form-group reps-input-group">
                     <label for="reps">Reps</label>
                     <input type="number" id="reps" placeholder="10" inputmode="numeric">
                 </div>
@@ -261,7 +276,7 @@
         navigator.serviceWorker.register('sw.js');
     }
 
-    // BASE DE DATOS PERSONALIZADA DE MÚSCULOS Y EJERCICIOS
+    // BASE DE DATOS PERSONALIZADA
     const dbGym = {
         "Pecho": [
             "Barra horizontal",
@@ -343,7 +358,6 @@
         renderMuscles();
     }
 
-    // Renderizar Pantalla 1
     function renderMuscles() {
         const container = document.getElementById('muscles-list');
         container.innerHTML = Object.keys(dbGym).map(muscle => `
@@ -353,7 +367,6 @@
         `).join('');
     }
 
-    // Seleccionar Músculo ➔ Ir a Pantalla 2
     function selectMuscle(muscle) {
         selectedMuscle = muscle;
         document.getElementById('title').innerText = muscle;
@@ -371,7 +384,6 @@
         showScreen('screen-exercises');
     }
 
-    // Seleccionar Ejercicio ➔ Ir a Pantalla 3
     function selectExercise(exercise) {
         selectedExercise = exercise;
         document.getElementById('title').innerText = exercise;
@@ -380,7 +392,6 @@
         showScreen('screen-detail');
     }
 
-    // Navegación hacia atrás
     function goBack() {
         const activeScreen = document.querySelector('.screen.active').id;
 
@@ -400,12 +411,14 @@
         document.getElementById(screenId).classList.add('active');
     }
 
-    // Guardar Serie vinculada al Ejercicio Actual
+    // Guardar Serie con la Unidad Seleccionada (kg / lb)
     function guardarSerie() {
         const weightInput = document.getElementById('weight');
+        const unitSelect = document.getElementById('unit');
         const repsInput = document.getElementById('reps');
 
         const weight = parseFloat(weightInput.value);
+        const unit = unitSelect.value;
         const reps = parseInt(repsInput.value);
 
         if (isNaN(weight) || isNaN(reps)) {
@@ -417,6 +430,7 @@
             id: Date.now(),
             exercise: selectedExercise,
             weight: weight,
+            unit: unit || 'kg',
             reps: reps,
             date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })
         };
@@ -431,7 +445,12 @@
         cargarDatosEjercicio();
     }
 
-    // Cargar Historial y Calcular PB para el Ejercicio Actual
+    // Convertir a kg equivalente para comparar PBs de forma justa
+    function getWeightInKg(item) {
+        const unit = item.unit || 'kg';
+        return unit === 'lb' ? item.weight * 0.453592 : item.weight;
+    }
+
     function cargarDatosEjercicio() {
         const container = document.getElementById('history-container');
         const pbDisplay = document.getElementById('pb-display');
@@ -442,14 +461,17 @@
 
         // --- CÁLCULO DEL PB (PERSONAL BEST) ---
         if (logsEjercicio.length > 0) {
-            // Encuentra el registro con el peso máximo (y más reps en caso de empate)
             const pb = logsEjercicio.reduce((max, item) => {
-                if (item.weight > max.weight) return item;
-                if (item.weight === max.weight && item.reps > max.reps) return item;
+                const itemKg = getWeightInKg(item);
+                const maxKg = getWeightInKg(max);
+
+                if (itemKg > maxKg) return item;
+                if (itemKg === maxKg && item.reps > max.reps) return item;
                 return max;
             }, logsEjercicio[0]);
 
-            pbDisplay.innerText = `${pb.weight} kg × ${pb.reps} reps`;
+            const unitText = pb.unit || 'kg';
+            pbDisplay.innerText = `${pb.weight} ${unitText} × ${pb.reps} reps`;
             pbDateDisplay.innerText = `Fecha: ${pb.date}`;
         } else {
             pbDisplay.innerText = '---';
@@ -462,17 +484,20 @@
             return;
         }
 
-        container.innerHTML = logsEjercicio.map(item => `
-            <div class="log-item">
-                <div class="log-info">
-                    <span>${item.date}</span>
+        container.innerHTML = logsEjercicio.map(item => {
+            const unitText = item.unit || 'kg';
+            return `
+                <div class="log-item">
+                    <div class="log-info">
+                        <span>${item.date}</span>
+                    </div>
+                    <div>
+                        <span class="log-data">${item.weight} ${unitText} × ${item.reps} reps</span>
+                        <button class="delete-btn" onclick="eliminarRegistro(${item.id})">✕</button>
+                    </div>
                 </div>
-                <div>
-                    <span class="log-data">${item.weight} kg × ${item.reps} reps</span>
-                    <button class="delete-btn" onclick="eliminarRegistro(${item.id})">✕</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     function eliminarRegistro(id) {
